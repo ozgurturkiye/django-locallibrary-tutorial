@@ -3,7 +3,8 @@ from rest_framework.views import APIView
 from rest_framework import serializers, status
 from rest_framework.response import Response
 
-from catalog.models import Author
+from catalog.models import Author, Genre
+from catalog.services import genre_list, genre_get
 
 
 class AuthorListApi(APIView):
@@ -78,4 +79,54 @@ class AuthorDetailApi(APIView):
     def delete(self, request, pk, format=None):
         author = self.get_object(pk)
         author.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class GenreListApi(APIView):
+    class OutputSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Genre
+            fields = ("id", "name")
+
+    def get(self, request):
+        genres = genre_list()
+        serializer = self.OutputSerializer(genres, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = self.InputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=201)
+
+
+class GenreDetailApi(APIView):
+    """
+    Retrieve, update or delete a genre instance.
+    """
+
+    class OutputSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Genre
+            fields = ("id", "name")
+
+    class InputSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Genre
+            fields = ("name",)
+
+    def get(self, request, pk, format=None):
+        genre = genre_get(pk=pk)
+        serializer = self.OutputSerializer(genre)
+        return Response(serializer.data)
+
+    def put(self, request, pk, format=None):
+        genre = genre_get(pk=pk)
+        serializer = self.InputSerializer(genre, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+    def delete(self, request, pk, format=None):
+        genre = genre_get(pk=pk)
+        genre.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
